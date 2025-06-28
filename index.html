@@ -2,10 +2,35 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Files M. Apablaza</title>
+  <title>Clases - File List</title>
 </head>
 <body>
-  <h1>Files</h1>
-  <p><a href="cipem.pdf" target="_blank">Presentation Cipem JUN 2025</a></p>
+  <h1>Files in Repository</h1>
+  <ul id="file-list"></ul>
+
+  <script>
+    const repo = "m-apablaza/files";
+    const apiUrl = `https://api.github.com/repos/${repo}/contents/`;
+
+    fetch(apiUrl)
+      .then(response => response.json())
+      .then(data => {
+        const fileList = document.getElementById('file-list');
+        data.forEach(item => {
+          if (item.type === "file") {
+            const li = document.createElement("li");
+            const link = document.createElement("a");
+            link.href = item.download_url;
+            link.textContent = item.name;
+            link.target = "_blank";
+            li.appendChild(link);
+            fileList.appendChild(li);
+          }
+        });
+      })
+      .catch(error => {
+        console.error("Error loading file list:", error);
+      });
+  </script>
 </body>
 </html>
