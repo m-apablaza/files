@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>File List</title>
+  <title>Clases - File List</title>
 </head>
 <body>
   <h1>Files in Repository</h1>
@@ -11,8 +11,17 @@
   <script>
     const repo = "m-apablaza/files";
     const apiUrl = `https://api.github.com/repos/${repo}/contents/`;
-
     const excludedFiles = ["LICENSE", "README.md", "index.html"];
+
+    // Capitalize first letter
+    function capitalizeFirst(str) {
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    // Format date as YYYY-MM-DD
+    function formatDate(isoString) {
+      return isoString.split("T")[0];
+    }
 
     fetch(apiUrl)
       .then(response => response.json())
@@ -20,13 +29,22 @@
         const fileList = document.getElementById('file-list');
         data.forEach(item => {
           if (item.type === "file" && !excludedFiles.includes(item.name)) {
-            const li = document.createElement("li");
-            const link = document.createElement("a");
-            link.href = item.download_url;
-            link.textContent = item.name;
-            link.target = "_blank";
-            li.appendChild(link);
-            fileList.appendChild(li);
+            // Get commit info for each file (to get last modified date)
+            fetch(`https://api.github.com/repos/${repo}/commits?path=${item.path}&per_page=1`)
+              .then(res => res.json())
+              .then(commitData => {
+                const li = document.createElement("li");
+                const link = document.createElement("a");
+                const date = commitData[0]?.commit?.committer?.date
+                  ? formatDate(commitData[0].commit.committer.date)
+                  : "Unknown date";
+
+                link.href = item.download_url;
+                link.textContent = `${capitalizeFirst(item.name)} (${date})`;
+                link.target = "_blank";
+                li.appendChild(link);
+                fileList.appendChild(li);
+              });
           }
         });
       })
