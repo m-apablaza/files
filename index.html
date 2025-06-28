@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Clases - File List</title>
+  <title>File List</title>
 </head>
 <body>
   <h1>Files in Repository</h1>
@@ -12,12 +12,14 @@
     const repo = "m-apablaza/files";
     const apiUrl = `https://api.github.com/repos/${repo}/contents/`;
 
+    const excludedFiles = ["LICENSE", "README.md", "index.html"];
+
     fetch(apiUrl)
       .then(response => response.json())
       .then(data => {
         const fileList = document.getElementById('file-list');
         data.forEach(item => {
-          if (item.type === "file") {
+          if (item.type === "file" && !excludedFiles.includes(item.name)) {
             const li = document.createElement("li");
             const link = document.createElement("a");
             link.href = item.download_url;
