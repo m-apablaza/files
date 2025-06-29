@@ -3,60 +3,75 @@
 <head>
   <meta charset="UTF-8">
   <title>Mauricio Apablaza (File List)</title>
+  <style>
+    body {
+      margin: 40px;
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+    }
+    li {
+      margin-bottom: 6px;
+    }
+  </style>
 </head>
 <body>
- <h1>Welcome</h1>
+  <h1>Welcome</h1>
   <p>
     This site is maintained by <strong>Mauricio Apablaza</strong>. I am director of research at the School of Government at the Universidad del Desarrollo, Chile and academic director of the programme Conocimiento e Investigación en Personas Mayores (CIPEM). I am also research associate at Oxford University (OPHI), research fellow at the London School of Economics (LSE-III) and Universidad de Chile (CSP).
     <a href="https://scholar.google.cl/citations?hl=en&user=qKDaZAMAAAAJ&view_op=list_works&sortby=pubdate" target="_blank">Google Scholar</a>.
   </p>
+
   <h2>Files in Repository</h2>
-  
   <ul id="file-list"></ul>
 
   <script>
     const repo = "m-apablaza/files";
-    const apiUrl = `https://api.github.com/repos/${repo}/contents/`;
     const excludedFiles = ["LICENSE", "README.md", "index.html"];
+    const fileList = document.getElementById("file-list");
 
-    // Capitalize first letter
     function capitalizeFirst(str) {
       return str.charAt(0).toUpperCase() + str.slice(1);
     }
 
-    // Format date as YYYY-MM-DD
     function formatDate(isoString) {
       return isoString.split("T")[0];
     }
 
-    fetch(apiUrl)
-      .then(response => response.json())
-      .then(data => {
-        const fileList = document.getElementById('file-list');
-        data.forEach(item => {
-          if (item.type === "file" && !excludedFiles.includes(item.name)) {
-            // Get commit info for each file (to get last modified date)
-            fetch(`https://api.github.com/repos/${repo}/commits?path=${item.path}&per_page=1`)
-              .then(res => res.json())
-              .then(commitData => {
-                const li = document.createElement("li");
-                const link = document.createElement("a");
-                const date = commitData[0]?.commit?.committer?.date
-                  ? formatDate(commitData[0].commit.committer.date)
-                  : "Unknown date";
+    async function fetchFilesRecursively(path = "") {
+      const apiUrl = `https://api.github.com/repos/${repo}/contents/${path}`;
+      try {
+        const response = await fetch(apiUrl);
+        const data = await response.json();
 
-                link.href = item.download_url;
-                link.textContent = `${capitalizeFirst(item.name)} (${date})`;
-                link.target = "_blank";
-                li.appendChild(link);
-                fileList.appendChild(li);
-              });
+        for (const item of data) {
+          if (item.type === "file" && !excludedFiles.includes(item.name)) {
+            const commitRes = await fetch(`https://api.github.com/repos/${repo}/commits?path=${item.path}&per_page=1`);
+            const commitData = await commitRes.json();
+            const date = commitData[0]?.commit?.committer?.date
+              ? formatDate(commitData[0].commit.committer.date)
+              : "Unknown date";
+
+            const li = document.createElement("li");
+            const link = document.createElement("a");
+            link.href = item.download_url;
+            link.textContent = `${capitalizeFirst(item.name)} (${date})`;
+            link.target = "_blank";
+            li.appendChild(link);
+            fileList.appendChild(li);
           }
-        });
-      })
-      .catch(error => {
-        console.error("Error loading file list:", error);
-      });
+
+          // Recurse into subdirectories
+          if (item.type === "dir") {
+            await fetchFilesRecursively(item.path);
+          }
+        }
+      } catch (error) {
+        console.error("Error loading files:", error);
+      }
+    }
+
+    // Start from root
+    fetchFilesRecursively();
   </script>
 </body>
 </html>
