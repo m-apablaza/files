@@ -12,6 +12,11 @@
     li {
       margin-bottom: 6px;
     }
+    h3 {
+      margin-top: 30px;
+      margin-bottom: 10px;
+      color: #333366;
+    }
   </style>
 </head>
 <body>
@@ -22,12 +27,12 @@
   </p>
 
   <h2>Files in Repository</h2>
-  <ul id="file-list"></ul>
+  <div id="file-container"></div>
 
   <script>
-    const repo = "m-apablaza/files";
+    const repo = "m-apablaza/files"; // Cambia a "m-apablaza/clases" si es tu otro repo
     const excludedFiles = ["LICENSE", "README.md", "index.html"];
-    const fileList = document.getElementById("file-list");
+    const container = document.getElementById("file-container");
 
     function capitalizeFirst(str) {
       return str.charAt(0).toUpperCase() + str.slice(1);
@@ -43,26 +48,37 @@
         const response = await fetch(apiUrl);
         const data = await response.json();
 
-        for (const item of data) {
-          if (item.type === "file" && !excludedFiles.includes(item.name)) {
-            const commitRes = await fetch(`https://api.github.com/repos/${repo}/commits?path=${item.path}&per_page=1`);
-            const commitData = await commitRes.json();
-            const date = commitData[0]?.commit?.committer?.date
-              ? formatDate(commitData[0].commit.committer.date)
-              : "Unknown date";
+        // Crear nuevo grupo para esta carpeta
+        if (data.length > 0) {
+          const folderName = path === "" ? "Root folder" : path;
+          const title = document.createElement("h3");
+          title.textContent = folderName;
+          container.appendChild(title);
 
-            const li = document.createElement("li");
-            const link = document.createElement("a");
-            link.href = item.download_url;
-            link.textContent = `${capitalizeFirst(item.name)} (${date})`;
-            link.target = "_blank";
-            li.appendChild(link);
-            fileList.appendChild(li);
-          }
+          const ul = document.createElement("ul");
+          container.appendChild(ul);
 
-          // Recurse into subdirectories
-          if (item.type === "dir") {
-            await fetchFilesRecursively(item.path);
+          for (const item of data) {
+            if (item.type === "file" && !excludedFiles.includes(item.name)) {
+              const commitRes = await fetch(`https://api.github.com/repos/${repo}/commits?path=${item.path}&per_page=1`);
+              const commitData = await commitRes.json();
+              const date = commitData[0]?.commit?.committer?.date
+                ? formatDate(commitData[0].commit.committer.date)
+                : "Unknown date";
+
+              const li = document.createElement("li");
+              const link = document.createElement("a");
+              link.href = item.download_url;
+              link.textContent = `${capitalizeFirst(item.name)} (${date})`;
+              link.target = "_blank";
+              li.appendChild(link);
+              ul.appendChild(li);
+            }
+
+            // Recursivamente recorrer subcarpetas
+            if (item.type === "dir") {
+              await fetchFilesRecursively(item.path);
+            }
           }
         }
       } catch (error) {
@@ -70,7 +86,6 @@
       }
     }
 
-    // Start from root
     fetchFilesRecursively();
   </script>
 </body>
